@@ -63,6 +63,7 @@ smart_locker/
   database/           # SQLAlchemy 2.0: models, engine (WAL mode), repositories
   services/           # Business logic: borrow/return with limit enforcement
   frontend/           # Static kiosk UI (index.html, style.css, app.js)
+    images/           # Stock device photos (Unsplash, dark-background product style)
 scripts/              # One-time utilities: generate_key, init_db, migrate_db, enroll_card, import_devices
 tests/                # pytest suite with in-memory DB and mock NFC data
 ```
@@ -92,10 +93,23 @@ tests/                # pytest suite with in-memory DB and mock NFC data
 
 ### Frontend (Kiosk UI)
 
-Three static files in `smart_locker/frontend/`:
+Static files in `smart_locker/frontend/`:
 - **index.html** — 6 screen definitions (Idle, Auth Failed, Main Menu, Borrow Grid, Return Grid, Device Detail)
-- **style.css** — Dark theme (`#080c10` / `#00d4ff` cyan), `clip-path` wipe transitions, staggered card animations
+- **style.css** — Dark theme (`#080c10` / `#00d4ff` cyan), landonorris.com-inspired transitions and animations
 - **app.js** — Client-side state machine; includes a demo mode with mock data for testing without backend
+- **images/** — Dark-background stock photos from Unsplash (placeholder; will be replaced with actual electrical test equipment photos)
+
+#### Animation System (landonorris.com-inspired)
+- **Circle reveal page transitions** — screens expand from click origin via CSS `clip-path: circle()`; JS tracks `lastClickX/Y` and sets `--reveal-x/--reveal-y` CSS custom properties
+- **Diagonal wipe overlays** — device detail and inactivity overlays use polygon clip-path wipes
+- **Ellipse-reveal images** — device card images reveal through expanding `clip-path: ellipse()` on entrance; action button background images use the same technique
+- **NFC texture breathe** — idle screen NFC icon has a looping ellipse reveal of a tech texture behind it
+- **Character split text** — headline text is split into individual `<span>` characters with staggered `rotateX + translateY` entrance animations
+- **Slot-machine numbers** — inactivity countdown digits animate with vertical slide transitions
+- **Magnetic hover** — buttons shift subtly toward cursor (clamped to ±4px on action buttons to prevent overlap)
+- **Image parallax** — device card images shift opposite to mouse direction on hover
+- **Cursor glow** — custom cursor dot expands and glows when hovering interactive elements
+- **Easing curves** — `--ease` (snappy) for small interactions, `--ease-smooth: cubic-bezier(0.65, 0.05, 0, 1)` (Norris-style) for major transitions
 
 The frontend currently has no HTTP connection to the backend. The next implementation step is to add a REST API layer (FastAPI routes + SSE event stream) so the frontend can receive card-tap events and invoke borrow/return operations.
 
@@ -112,6 +126,6 @@ The frontend currently has no HTTP connection to the backend. The next implement
 
 ## What's Built vs. What's Next
 
-**Complete:** NFC reader (pyscard, retry logic), authentication (HMAC lookup, session management), security (AES-256-GCM, key management), database + ORM (SQLAlchemy 2.0, WAL), business logic (borrow/return, admin override, transaction logging), unit tests (52 tests), frontend UI (6 screens, animations, demo mode).
+**Complete:** NFC reader (pyscard, retry logic), authentication (HMAC lookup, session management), security (AES-256-GCM, key management), database + ORM (SQLAlchemy 2.0, WAL), business logic (borrow/return, admin override, transaction logging), unit tests (52 tests), frontend UI (6 screens, landonorris.com-inspired animations, stock images, demo mode).
 
-**Not yet built:** REST API routes connecting frontend to backend, SSE event bridge for pushing card-tap events to the browser, kiosk deployment (Chromium kiosk mode, Windows auto-start).
+**Not yet built:** REST API routes connecting frontend to backend, SSE event bridge for pushing card-tap events to the browser, replace stock images with actual electrical test equipment photos, kiosk deployment (Chromium kiosk mode, Windows auto-start).
