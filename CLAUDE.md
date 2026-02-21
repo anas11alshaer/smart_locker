@@ -63,7 +63,7 @@ smart_locker/
   database/           # SQLAlchemy 2.0: models, engine (WAL mode), repositories
   services/           # Business logic: borrow/return with limit enforcement
   frontend/           # Static kiosk UI (index.html, style.css, app.js)
-scripts/              # One-time utilities: generate_key, init_db, enroll_card, import_devices
+scripts/              # One-time utilities: generate_key, init_db, migrate_db, enroll_card, import_devices
 tests/                # pytest suite with in-memory DB and mock NFC data
 ```
 
@@ -72,7 +72,7 @@ tests/                # pytest suite with in-memory DB and mock NFC data
 1. `NFCReader` (pyscard `CardMonitor` + `ReaderMonitor` in background threads) detects a card tap and queues an event.
 2. `SmartLockerApp.run()` retrieves the event and calls `Authenticator.authenticate(uid_hex)`.
 3. Authenticator computes `HMAC-SHA256(uid, hmac_key)` and does an indexed lookup in `users.uid_hmac` — no decryption needed for auth.
-4. On success, `SessionManager` starts a session; inactivity timeout (default 120 s) is reset on each user action via `touch()`.
+4. On success, `SessionManager` starts a session. The card is removed from the reader; the session persists on the touch display. A second card tap ends the session explicitly. An inactivity timeout (default 120 s) silently clears the session as a security backstop.
 5. `LockerService.borrow_device()` / `return_device()` enforces the per-user borrow limit (default 5), updates device status, and writes a `TransactionLog`.
 
 ### Security Design
@@ -80,7 +80,7 @@ tests/                # pytest suite with in-memory DB and mock NFC data
 - **Two independent keys**: `SMART_LOCKER_ENC_KEY` (AES-256-GCM) and `SMART_LOCKER_HMAC_KEY` (HMAC-SHA256), both 32-byte base64-encoded values in `.env`.
 - **HMAC for lookup**: Deterministic digest stored in `users.uid_hmac` (indexed) enables O(1) auth without decrypting rows.
 - **AES-GCM for storage**: Random nonce per encryption — same UID produces different ciphertext every time; only admins can decrypt.
-- **UID masking in logs**: Raw UIDs are never logged (shown as `04**********80`).
+- **UID never logged**: Raw UIDs are never written to log files — card events are logged as "Card inserted on <reader>" with no UID information.
 
 ### Database Schema
 
